@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -31,9 +32,15 @@ class WeatherService {
   }
 
   Future<String> getCurrentCity() async {
+    // Default to New York if running on unsupported platform or in web
+    if (kIsWeb || !Platform.isAndroid && !Platform.isIOS) {
+      return 'New York';
+    }
+
     try {
       // Check location service
-      if (!await Geolocator.isLocationServiceEnabled()) {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
         throw Exception('Location services disabled');
       }
 
@@ -61,10 +68,12 @@ class WeatherService {
         position.longitude,
       ).timeout(const Duration(seconds: 5));
 
-      return placemarks.first.locality ?? placemarks.first.subAdministrativeArea ?? 'Unknown';
+      return placemarks.first.locality ?? 
+             placemarks.first.subAdministrativeArea ?? 
+             'Unknown';
     } catch (e) {
       debugPrint('Location error: $e');
-      rethrow;
+      return 'New York'; // Fallback to default city
     }
   }
 }
